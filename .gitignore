@@ -74,3 +74,5 @@ outTmp/
 /kotlin-native/dist
 kotlin-ide/
 trash.kt
+/res
+hosts-shortcut*
