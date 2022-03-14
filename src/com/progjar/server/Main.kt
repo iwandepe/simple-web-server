@@ -16,16 +16,17 @@ import java.net.Socket
  */
 
 //val ROOTDIR = "/home/iwandepe/progjar/www/"
-val ROOTDIR = "C:\\developing\\project\\project-java\\simple-web-server\\res\\"
-val PORT = 8888
+var ROOTDIR = "C:\\developing\\project\\project-java\\simple-web-server\\res\\"
+var PORT = 8888
+var ip : String? = "127.0.0.1"
 val REQUEST_TIMEOUT = 3L
 
 var clientAlive : Socket? = null
 
 fun main(args: Array<String>) {
     try {
+        readConf()
         val server = ServerSocket( PORT )
-
         while (true) {
             val client = server.accept()
 
@@ -68,6 +69,45 @@ fun main(args: Array<String>) {
     } catch (e: Exception) {
         println(e.message)
     }
+}
+
+fun readConf() {
+    val f       = File(ROOTDIR + "httpd.conf" )
+    val fis     = FileInputStream(f)
+    val conf    = String( fis.readAllBytes() )
+
+    val readPort    = conf.split("\n")[0].split(" ")[1]
+    val readIp      = conf.split("\n")[1].split(" ")[1]
+    val readRoot    = conf.split("\n")[2].split(" ")[1]
+
+    val parsedPort = parsePort( readPort )
+
+    PORT = parsedPort
+    ip = readIp
+    ROOTDIR = readRoot
+
+    return
+}
+
+fun parsePort( readPort: String ): Int {
+    try {
+        var parsedPort = readPort.substring(0, readPort.length).toInt()
+        return parsedPort
+    } catch (nfe: NumberFormatException) {
+        // not a valid int
+        var parsedPort = readPort.substring(0, readPort.length - 1).toInt()
+        return parsedPort
+    } catch (nfe: NumberFormatException) {
+        var parsedPort = readPort.substring(0, readPort.length - 2).toInt()
+        return parsedPort
+    } catch (nfe: NumberFormatException) {
+        var parsedPort = readPort.substring(0, readPort.length - 3).toInt()
+        return parsedPort
+    } catch (nfe: NumberFormatException) {
+        var parsedPort = readPort.substring(0, readPort.length - 4).toInt()
+        return parsedPort
+    }
+    return 8888
 }
 
 fun keepAlive( client: Socket ) {
