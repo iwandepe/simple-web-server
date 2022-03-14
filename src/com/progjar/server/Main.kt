@@ -123,6 +123,9 @@ fun response( out: PrintWriter, urn: String ) {
         }
     } else if (f.exists() && f.isDirectory()) {
         var fIndex = File(ROOTDIR + urn + "index.html")
+        if ( !urn.last().equals('\\') && !fIndex.exists() ) {
+            fIndex = File(ROOTDIR + urn + "\\index.html")
+        }
         if (fIndex.exists()) {
             responseHtmlFile(out, fIndex)
         } else {

@@ -1,10 +1,4 @@
-<img src="https://avatars.githubusercontent.com/u/55144122?v=4" height="100">
 
-# IWAN DWI PRAKOSO
-<div style="display: flex; justify-content: center; align-items: center; text-align: center;">
-<img src="https://avatars.githubusercontent.com/u/55141556?v=4" height="100" style="border-radius: 100px">
-<h1>ALLAM TAJU SAROF</h1>
-</div>
 
 
 
