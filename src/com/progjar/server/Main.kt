@@ -58,6 +58,8 @@ fun main(args: Array<String>) {
                 }
             }
 
+            readConf(host)
+
             response( out, urn )
 
             /*dont keep chrome alive*/
@@ -97,7 +99,6 @@ fun readConf(domain: String) {
                 line = br.readLine()
                 serverroot = line.split(" ")[1]
 
-                line = br.readLine()
                 break
             }
         }
