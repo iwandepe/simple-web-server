@@ -58,7 +58,6 @@ fun main(args: Array<String>) {
                 }
             }
 
-            readConf(host)
             response( out, urn )
 
             /*dont keep chrome alive*/
