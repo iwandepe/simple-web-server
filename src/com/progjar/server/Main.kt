@@ -15,7 +15,7 @@ import java.net.Socket
  * 5. Keeps the connection open if the client requests it. (Hint: check the Connection HTTP header. Your webserver will not be able to accept another client once the connection is still open, but that is okay)
  */
 
-val CONF_PATH = "/home/iwandepe/IdeaProjects/simple-web-server/res/httpd.conf"
+//val CONF_PATH = "/home/iwandepe/IdeaProjects/simple-web-server/res/httpd.conf"
 var serverroot = "/"
 //var serverroot = "C:\\developing\\project\\project-java\\simple-web-server\\res\\"
 var port = 8888
@@ -166,7 +166,7 @@ fun response( out: PrintWriter, urn: String ) {
         }
     } else if (f.exists() && f.isDirectory()) {
         var fIndex = File(serverroot + urn + "index.html")
-        if ( !urn.last().equals('\\') && !fIndex.exists() ) {
+        if ( !urn.isEmpty() && !urn.last().equals('\\') && !fIndex.exists() ) {
             fIndex = File(serverroot + urn + "\\index.html")
         }
         if (fIndex.exists()) {
