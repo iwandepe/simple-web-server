@@ -15,7 +15,7 @@ import java.util.Date
  * 5. Keeps the connection open if the client requests it. (Hint: check the Connection HTTP header. Your webserver will not be able to accept another client once the connection is still open, but that is okay)
  */
 
-val CONF_PATH = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res\\httpd.conf"
+val ROOT = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res"
 var serverroot = ""
 var port = 80
 var ip = ""
@@ -30,7 +30,6 @@ fun main(args: Array<String>) {
             val client = server.accept()
 
             val br = BufferedReader(InputStreamReader(client.getInputStream()))
-            val out = PrintWriter(client.getOutputStream())
             val ps = PrintStream(client.getOutputStream())
 
             var message = br.readLine()
@@ -59,7 +58,7 @@ fun main(args: Array<String>) {
 
             readConf(host)
 
-            response( out, ps, urn )
+            response( ps, urn )
 
             /*dont keep chrome alive*/
             if (isKeepAlive && !isChrome) {
@@ -78,7 +77,7 @@ fun main(args: Array<String>) {
 }
 
 fun readConf(domain: String) {
-    val f = File(CONF_PATH)
+    val f = File(ROOT + "\\httpd.conf")
     val fr = FileReader(f)
     val br = BufferedReader(fr)
     var line = br.readLine()
@@ -124,7 +123,6 @@ fun keepAlive( client: Socket ) {
         return
     }
 
-    val out = PrintWriter(client.getOutputStream())
     println("Request: $message")
     if (message.isNullOrEmpty()) {
         message = ""
@@ -144,7 +142,7 @@ fun keepAlive( client: Socket ) {
     }
     println( '3' )
 
-    response( out, ps, urn )
+    response( ps, urn )
 
     if (keepAlive == true) {
         println( "----connection still alive----\n" )
@@ -152,11 +150,11 @@ fun keepAlive( client: Socket ) {
     } else return
 }
 
-fun response( out: PrintWriter, ps: PrintStream, urn: String ) {
+fun response( ps: PrintStream, urn: String ) {
     var f = File(serverroot + urn)
     if (f.exists() && !f.isDirectory()) {
         if (f.extension == "html"){
-            responseHtmlFile(out, f)
+            responseHtmlFile(ps, f)
         } else {
             responseBinaryFile(ps, f)
         }
@@ -166,26 +164,26 @@ fun response( out: PrintWriter, ps: PrintStream, urn: String ) {
             fIndex = File(serverroot + urn + "\\index.html")
         }
         if (fIndex.exists()) {
-            responseHtmlFile(out, fIndex)
+            responseHtmlFile(ps, fIndex)
         } else {
-            responseDirectoryListing(out, f)
+            responseDirectoryListing(ps, f)
         }
     } else {
-        responseByStatusCode(out, 404)
+        responseNotFound(ps, 404)
     }
 }
 
-fun responseHtmlFile(out: PrintWriter, f: File) {
+fun responseHtmlFile(ps: PrintStream, f: File) {
     val fis = FileInputStream(f)
     var fileContent = String(fis.readAllBytes())
 
-    out.println("HTTP/1.0 200 OK")
-    out.println("Content-Type: text/html")
-    out.println("Content-length: " + fileContent.length)
-    out.println()
-    out.println(fileContent)
-    out.println()
-    out.flush()
+    ps.println("HTTP/1.0 200 OK")
+    ps.println("Content-Type: text/html")
+    ps.println("Content-length: " + fileContent.length)
+    ps.println()
+    ps.println(fileContent)
+    ps.println()
+    ps.flush()
 }
 
 fun responseBinaryFile(ps: PrintStream, f: File) {
@@ -193,14 +191,10 @@ fun responseBinaryFile(ps: PrintStream, f: File) {
 
     var response = StringBuilder()
 
-    response.append("HTTP/1.0 200 OK")
-    response.append("\r\n")
-    response.append("Content-Type: application/" + f.name.substring(f.name.lastIndexOf(".")))
-    response.append("\r\n")
-    response.append("Content-Length: " + f.length())
-    response.append("\r\n\r\n")
-
-    ps.print(response.toString())
+    ps.println("HTTP/1.0 200 OK")
+    ps.println("Content-Type: application/" + f.name.substring(f.name.lastIndexOf(".")))
+    ps.println("Content-Length: " + f.length())
+    ps.println()
 
     var buffer = ByteArray(1000)
     while(fis.available() > 0) {
@@ -210,7 +204,7 @@ fun responseBinaryFile(ps: PrintStream, f: File) {
     ps.flush()
 }
 
-fun responseDirectoryListing(out: PrintWriter, f: File) {
+fun responseDirectoryListing(ps: PrintStream, f: File) {
     val fileList = f.listFiles()
 
     data class Directory(
@@ -260,24 +254,25 @@ fun responseDirectoryListing(out: PrintWriter, f: File) {
     }
     res.append("</table>")
 
-    out.println("HTTP/1.0 200 OK")
-    out.println("Content-Type: text/html")
-    out.println()
-    out.println(res.toString())
-    out.println()
-    out.flush()
+    ps.println("HTTP/1.0 200 OK")
+    ps.println("Content-Type: text/html")
+    ps.println("Content-Length: " + res.length)
+    ps.println()
+    ps.println(res.toString())
+    ps.println()
+    ps.flush()
 }
 
-fun responseByStatusCode(out: PrintWriter, code: Int) {
-    var status = ""
-    if (code == 404) {
-        status = "404 Not Found"
-    }
+fun responseNotFound(ps: PrintStream, code: Int) {
+    val f = File(ROOT + "\\404.html")
+    val fis = FileInputStream(f)
+    var fileContent = String(fis.readAllBytes())
 
-    out.println("HTTP/1.0 " + status)
-    out.println("Content-Type: html")
-    out.println()
-    out.println(status)
-    out.println()
-    out.flush()
+    ps.println("HTTP/1.0 404 Not Found")
+    ps.println("Content-Type: text/html")
+    ps.println("Content-Length: " + f.length())
+    ps.println()
+    ps.println(fileContent)
+    ps.println()
+    ps.flush()
 }
