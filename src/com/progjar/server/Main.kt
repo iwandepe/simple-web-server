@@ -3,6 +3,7 @@ package com.progjar.server
 import java.io.*
 import java.net.ServerSocket
 import java.net.Socket
+import kotlin.reflect.jvm.internal.impl.protobuf.ByteString
 
 
 /**
@@ -33,6 +34,7 @@ fun main(args: Array<String>) {
 
             val br = BufferedReader(InputStreamReader(client.getInputStream()))
             val out = PrintWriter(client.getOutputStream())
+            val ps = PrintStream(client.getOutputStream())
 
             var message = br.readLine()
             println( "----connection accepted----" )
@@ -60,7 +62,7 @@ fun main(args: Array<String>) {
 
             readConf(host)
 
-            response( out, urn )
+            response( out, ps, urn )
 
             /*dont keep chrome alive*/
             if (isKeepAlive && !isChrome) {
@@ -114,6 +116,7 @@ fun keepAlive( client: Socket ) {
     var keepAlive = false
 
     var br = BufferedReader(InputStreamReader(client.getInputStream()))
+    var ps = PrintStream(client.getOutputStream())
     var message: String? = ""
     try{
         message = br.readLine()
@@ -144,7 +147,7 @@ fun keepAlive( client: Socket ) {
     }
     println( '3' )
 
-    response( out, urn )
+    response( out, ps, urn )
 
     if (keepAlive == true) {
         println( "----connection still alive----\n" )
@@ -152,13 +155,13 @@ fun keepAlive( client: Socket ) {
     } else return
 }
 
-fun response( out: PrintWriter, urn: String ) {
+fun response( out: PrintWriter, ps: PrintStream, urn: String ) {
     var f = File(serverroot + urn)
     if (f.exists() && !f.isDirectory()) {
         if (f.extension == "html"){
             responseHtmlFile(out, f)
         } else {
-            responseBinaryFile(out, f)
+            responseBinaryFile(ps, f)
         }
     } else if (f.exists() && f.isDirectory()) {
         var fIndex = File(serverroot + urn + "index.html")
@@ -188,21 +191,26 @@ fun responseHtmlFile(out: PrintWriter, f: File) {
     out.flush()
 }
 
-// Not working correctly
-fun responseBinaryFile(out: PrintWriter, f: File) {
+fun responseBinaryFile(ps: PrintStream, f: File) {
     val fis = FileInputStream(f)
 
-    out.println("HTTP/1.0 200 OK")
-    out.println("Content-Type: application/octet-stream")
-    out.println("Content-Disposition: attactment; filename=\"" + f.path.substring(serverroot.length) + "\"")
-    out.println()
-    var reads = fis.read()
-    while(reads != -1) {
-        out.write(reads)
-        reads = fis.read()
+    var response = StringBuilder()
+
+    response.append("HTTP/1.0 200 OK")
+    response.append("\r\n")
+    response.append("Content-Type: application/pdf")
+    response.append("\r\n")
+    response.append("Content-Length: " + f.length())
+    response.append("\r\n\r\n")
+
+    ps.print(response.toString())
+
+    var buffer = ByteArray(1000)
+    while(fis.available() > 0) {
+        ps.write(buffer, 0, fis.read(buffer))
     }
-    out.println()
-    out.flush()
+
+    ps.flush()
 }
 
 fun responseDirectoryListing(out: PrintWriter, f: File) {
