@@ -15,9 +15,10 @@ import java.net.Socket
  * 5. Keeps the connection open if the client requests it. (Hint: check the Connection HTTP header. Your webserver will not be able to accept another client once the connection is still open, but that is okay)
  */
 
-//val ROOTDIR = "/home/iwandepe/progjar/www/"
-var ROOTDIR = "C:\\developing\\project\\project-java\\simple-web-server\\res\\"
-var PORT = 8888
+val CONF_PATH = "/home/iwandepe/IdeaProjects/simple-web-server/res/httpd.conf"
+var serverroot = "/"
+//var serverroot = "C:\\developing\\project\\project-java\\simple-web-server\\res\\"
+var port = 8888
 var ip : String? = "127.0.0.1"
 val REQUEST_TIMEOUT = 3L
 
@@ -26,9 +27,11 @@ var clientAlive : Socket? = null
 fun main(args: Array<String>) {
     try {
         readConf()
-        val server = ServerSocket( PORT )
+        val server = ServerSocket( port )
         while (true) {
             val client = server.accept()
+
+            println("host: " + client.inetAddress.hostName)
 
             val br = BufferedReader(InputStreamReader(client.getInputStream()))
             val out = PrintWriter(client.getOutputStream())
@@ -72,7 +75,7 @@ fun main(args: Array<String>) {
 }
 
 fun readConf() {
-    val f       = File(ROOTDIR + "httpd.conf" )
+    val f       = File(CONF_PATH)
     val fis     = FileInputStream(f)
     val conf    = String( fis.readAllBytes() )
 
@@ -82,9 +85,9 @@ fun readConf() {
 
     val parsedPort = parsePort( readPort )
 
-    PORT = parsedPort
+    port = parsedPort
     ip = readIp
-    ROOTDIR = readRoot
+    serverroot = readRoot
 
     return
 }
@@ -154,7 +157,7 @@ fun keepAlive( client: Socket ) {
 }
 
 fun response( out: PrintWriter, urn: String ) {
-    var f = File(ROOTDIR + urn)
+    var f = File(serverroot + urn)
     if (f.exists() && !f.isDirectory()) {
         if (f.extension == "html"){
             responseHtmlFile(out, f)
@@ -162,9 +165,9 @@ fun response( out: PrintWriter, urn: String ) {
             responseBinaryFile(out, f)
         }
     } else if (f.exists() && f.isDirectory()) {
-        var fIndex = File(ROOTDIR + urn + "index.html")
+        var fIndex = File(serverroot + urn + "index.html")
         if ( !urn.last().equals('\\') && !fIndex.exists() ) {
-            fIndex = File(ROOTDIR + urn + "\\index.html")
+            fIndex = File(serverroot + urn + "\\index.html")
         }
         if (fIndex.exists()) {
             responseHtmlFile(out, fIndex)
@@ -195,7 +198,7 @@ fun responseBinaryFile(out: PrintWriter, f: File) {
 
     out.println("HTTP/1.0 200 OK")
     out.println("Content-Type: application/octet-stream")
-    out.println("Content-Disposition: attactment; filename=\"" + f.path.substring(ROOTDIR.length) + "\"")
+    out.println("Content-Disposition: attactment; filename=\"" + f.path.substring(serverroot.length) + "\"")
     out.println()
     var reads = fis.read()
     while(reads != -1) {
@@ -212,7 +215,7 @@ fun responseDirectoryListing(out: PrintWriter, f: File) {
     var response = "<ul>"
     for (file in fileList) {
         response += "<li>"
-        response += "<a href=\"" + f.path.substring(ROOTDIR.length - 1) + "/" + file.name + "\">"
+        response += "<a href=\"" + f.path.substring(serverroot.length - 1) + "/" + file.name + "\">"
 
         if (file.isDirectory()) {
             response += file.name + "/\n"
