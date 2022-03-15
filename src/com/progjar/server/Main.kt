@@ -3,8 +3,7 @@ package com.progjar.server
 import java.io.*
 import java.net.ServerSocket
 import java.net.Socket
-import kotlin.reflect.jvm.internal.impl.protobuf.ByteString
-
+import java.util.Date
 
 /**
  * TASKS:
@@ -17,11 +16,9 @@ import kotlin.reflect.jvm.internal.impl.protobuf.ByteString
  */
 
 val CONF_PATH = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res\\httpd.conf"
-var serverroot = "C:\\"
-//var serverroot = "C:\\developing\\project\\project-java\\simple-web-server\\res\\"
+var serverroot = ""
 var port = 80
-var ip : String? = "127.0.0.1"
-val REQUEST_TIMEOUT = 3L
+var ip = ""
 var host = ""
 
 var clientAlive : Socket? = null
@@ -198,7 +195,7 @@ fun responseBinaryFile(ps: PrintStream, f: File) {
 
     response.append("HTTP/1.0 200 OK")
     response.append("\r\n")
-    response.append("Content-Type: application/pdf")
+    response.append("Content-Type: application/" + f.name.substring(f.name.lastIndexOf(".")))
     response.append("\r\n")
     response.append("Content-Length: " + f.length())
     response.append("\r\n\r\n")
@@ -216,26 +213,57 @@ fun responseBinaryFile(ps: PrintStream, f: File) {
 fun responseDirectoryListing(out: PrintWriter, f: File) {
     val fileList = f.listFiles()
 
-    var response = "<ul>"
+    data class Directory(
+        val name: String,
+        val path: String,
+        val lastModified: String,
+        val size: String
+    )
+
+    val directories = mutableListOf<Directory>()
+
     for (file in fileList) {
-        response += "<li>"
-        response += "<a href=\"" + f.path.substring(serverroot.length - 1) + "/" + file.name + "\">"
-
         if (file.isDirectory()) {
-            response += file.name + "/\n"
-        } else {
-            response += file.name + "\n"
+            val name = file.name + "/";
+            val path = file.path.substring(serverroot.length - 1)
+            val lastModified = Date(file.lastModified()).toString()
+            val size = file.length().toString()
+            directories.add(Directory(name, path, lastModified, size))
         }
-
-        response += "</a>"
-        response += "</li>"
     }
-    response += "</ul>"
+
+    for (file in fileList) {
+        if (!file.isDirectory) {
+            val name = file.name
+            val path = file.path.substring(serverroot.length - 1)
+            val lastModified = Date(file.lastModified()).toString()
+            val size = file.length().toString()
+            directories.add(Directory(name, path, lastModified, size))
+        }
+    }
+
+    var res = StringBuilder()
+
+    res.append("<table>");
+    res.append("<tr>");
+    res.append("    <th>Name</th>");
+    res.append("    <th>Last Modified</th>");
+    res.append("    <th>Size(Bytes)</th>");
+    res.append("</tr>");
+
+    for (file in directories) {
+        res.append("<tr>")
+        res.append("    <td><a href=\"${file.path}\">${file.name}</a></td>")
+        res.append("    <td>${file.lastModified}</td>")
+        res.append("    <td>${file.size}</td>")
+        res.append("<tr>")
+    }
+    res.append("</table>")
 
     out.println("HTTP/1.0 200 OK")
     out.println("Content-Type: text/html")
     out.println()
-    out.println(response)
+    out.println(res.toString())
     out.println()
     out.flush()
 }
