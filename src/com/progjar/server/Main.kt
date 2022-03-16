@@ -37,9 +37,7 @@ fun main(args: Array<String>) {
 
             try{
                 message = br.readLine()
-                println( "**empty input**" )
             } catch (e: IOException) {
-                println( "**empty input**" )
                 message = ""
             }
 
@@ -121,7 +119,6 @@ fun readConf(domain: String) {
 }
 
 fun keepAlive( client: Socket ) {
-    println( '1' )
     var keepAlive = false
 
     var br = BufferedReader(InputStreamReader(client.getInputStream()))
@@ -129,9 +126,7 @@ fun keepAlive( client: Socket ) {
     var message: String? = ""
     try{
         message = br.readLine()
-        println( "**empty input**" )
     } catch (e: IOException) {
-        println( "**empty input**" )
         message = ""
         return
     }
@@ -145,7 +140,6 @@ fun keepAlive( client: Socket ) {
     var urn = message.split(" ")[1]
     urn = urn.substring( 1 )
 
-    println( '2' )
     while(!message!!.isEmpty()) {
         message = br.readLine()
 
@@ -153,7 +147,6 @@ fun keepAlive( client: Socket ) {
             keepAlive = true
         }
     }
-    println( '3' )
 
     response( ps, urn )
 
