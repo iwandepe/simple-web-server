@@ -15,8 +15,8 @@ import java.util.Date
  * 5. Keeps the connection open if the client requests it. (Hint: check the Connection HTTP header. Your webserver will not be able to accept another client once the connection is still open, but that is okay)
  */
 
-val ROOT = "C:\\developing\\project\\project-java\\simple-web-server\\res"
-//val ROOT = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res"
+//val ROOT = "C:\\developing\\project\\project-java\\simple-web-server\\res"
+val ROOT = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res"
 var serverroot = ""
 var port = 80
 var ip = ""
