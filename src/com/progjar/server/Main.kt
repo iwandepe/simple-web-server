@@ -15,7 +15,8 @@ import java.util.Date
  * 5. Keeps the connection open if the client requests it. (Hint: check the Connection HTTP header. Your webserver will not be able to accept another client once the connection is still open, but that is okay)
  */
 
-val ROOT = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res"
+val ROOT = "C:\\developing\\project\\project-java\\simple-web-server\\res"
+//val ROOT = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res"
 var serverroot = ""
 var port = 80
 var ip = ""
@@ -32,12 +33,24 @@ fun main(args: Array<String>) {
             val br = BufferedReader(InputStreamReader(client.getInputStream()))
             val ps = PrintStream(client.getOutputStream())
 
-            var message = br.readLine()
+            var message = ""
+
+            try{
+                message = br.readLine()
+                println( "**empty input**" )
+            } catch (e: IOException) {
+                println( "**empty input**" )
+                message = ""
+            }
+
             println( "----connection accepted----" )
             println("Request: $message")
 
-            var urn = message.split(" ")[1]
-            urn = urn.substring( 1 )
+            var urn = ""
+            if (message.split(" ").size > 1) {
+                urn = message.split(" ")[1]
+                urn = urn.substring( 1 )
+            }
 
             var isKeepAlive = false
             var isChrome = false
@@ -61,7 +74,7 @@ fun main(args: Array<String>) {
             response( ps, urn )
 
             /*dont keep chrome alive*/
-            if (isKeepAlive && !isChrome) {
+            if (isKeepAlive && !isChrome ) {
                 println( client.keepAlive )
                 println( "----connection still alive----" )
                 keepAlive( client )
@@ -193,6 +206,8 @@ fun responseBinaryFile(ps: PrintStream, f: File) {
 
     ps.println("HTTP/1.0 200 OK")
     ps.println("Content-Type: application/" + f.name.substring(f.name.lastIndexOf(".")))
+    println( "f.name: " + f.name.substring(f.name.lastIndexOf(".")) )
+    println( "ext: " + f.extension )
     ps.println("Content-Length: " + f.length())
     ps.println()
 
