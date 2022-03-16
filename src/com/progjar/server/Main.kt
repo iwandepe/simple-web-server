@@ -29,19 +29,16 @@ fun main(args: Array<String>) {
         val server = ServerSocket( port )
         while (true) {
             val client = server.accept()
+            println( "----connection accepted----" )
 
             val br = BufferedReader(InputStreamReader(client.getInputStream()))
             val ps = PrintStream(client.getOutputStream())
 
             var message = ""
 
-            try{
-                message = br.readLine()
-            } catch (e: IOException) {
-                message = ""
-            }
+            println( "----reading input----" )
+            message = br.readLine()
 
-            println( "----connection accepted----" )
             println("Request: $message")
 
             var urn = ""
@@ -82,6 +79,8 @@ fun main(args: Array<String>) {
             client.close()
         }
         server.close()
+    } catch (e: IOException) {
+        println( "IO excepetion: \n${e.message}" )
     } catch (e: Exception) {
         println(e.message)
     }
@@ -140,18 +139,29 @@ fun keepAlive( client: Socket ) {
     var urn = message.split(" ")[1]
     urn = urn.substring( 1 )
 
+    var isKeepAlive = false
+    var isChrome = false
     while(!message!!.isEmpty()) {
         message = br.readLine()
 
-        if (message.contains("keep-alive")) {
-            keepAlive = true
+        if (message.contains("keep-alive", true)) {
+            isKeepAlive = true
+        }
+        if (message.contains("chrome", true) || message.contains("Mozilla", true)) {
+            isChrome = true
+        }
+
+        if (message.startsWith("host", true)) {
+            host = message.split(" ")[1]
         }
     }
 
+    readConf(host)
     response( ps, urn )
 
-    if (keepAlive == true) {
-        println( "----connection still alive----\n" )
+    if (keepAlive && !isChrome ) {
+        println( client.keepAlive )
+        println( "----connection still alive----" )
         keepAlive( client )
     } else return
 }
