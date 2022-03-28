@@ -8,19 +8,17 @@ import java.util.Date
 /**
  * TASKS:
  *
- * 1. Serves any file under the website root directory to the client. If the requested file is a text or HTML file, the browser will show the content. If it is a binary file (e.g. PDF, images, documents, etc) the browser will download it. (Hint: use the correct content-type for each file served)
- * 2. Shows a list of files and folders when the client requests a directory that does not have index.html inside it. The list must show the file/folder name, last modified date, and size. The name must also be clickable and make the user requests the file/folder when they click it. (Hint: send a temporary HTML string containing the necessary contents)
- * 3. Serves multiple websites like Nginx/Apache VirtualHost. The client must be able to access various domains handled by your web server. (Hint: modify /etc/hosts in Linux or C:\Windows\System32\drivers\etc\hosts in Windows to add your own domain names such that your browser can recognise them)
- * 4. Has a configuration file that allows us to configure the IP address and port bound by the webserver. The file must also include the root directory of each website handled by your webserver.
- * 5. Keeps the connection open if the client requests it. (Hint: check the Connection HTTP header. Your webserver will not be able to accept another client once the connection is still open, but that is okay)
+ * 1. Modify your web server to be able to handle multiple clients at the same time
+ * 2. make your web server being able to handle parallel downloads from IDM
  */
 
-//val ROOT = "C:\\developing\\project\\project-java\\simple-web-server\\res"
-val ROOT = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res"
+val ROOT = "C:\\developing\\project\\project-java\\simple-web-server\\res"
+//val ROOT = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res"
 var serverroot = ""
 var port = 80
 var ip = ""
 var host = ""
+var clientCounter = 0
 
 var clientAlive : Socket? = null
 
@@ -29,60 +27,70 @@ fun main(args: Array<String>) {
         val server = ServerSocket( port )
         while (true) {
             val client = server.accept()
-            println( "----connection accepted----" )
-
-            val br = BufferedReader(InputStreamReader(client.getInputStream()))
-            val ps = PrintStream(client.getOutputStream())
-
-            var message = ""
-
-            println( "----reading input----" )
-            message = br.readLine()
-
-            println("Request: $message")
-
-            var urn = ""
-            if (message.split(" ").size > 1) {
-                urn = message.split(" ")[1]
-                urn = urn.substring( 1 )
-            }
-
-            var isKeepAlive = false
-            var isChrome = false
-            while(!message.isEmpty()) {
-                message = br.readLine()
-
-                if (message.contains("keep-alive", true)) {
-                    isKeepAlive = true
-                }
-                if (message.contains("chrome", true) || message.contains("Mozilla", true)) {
-                    isChrome = true
-                }
-
-                if (message.startsWith("host", true)) {
-                    host = message.split(" ")[1]
-                }
-            }
-
-            readConf(host)
-
-            response( ps, urn )
-
-            /*dont keep chrome alive*/
-            if (isKeepAlive && !isChrome ) {
-                println( client.keepAlive )
-                println( "----connection still alive----" )
-                keepAlive( client )
-            }
-
-            println( "----connection closed----\n" )
-            client.close()
+            clientCounter++
+            var clientThread = ThreadHandler( "client-$clientCounter", client )
+            clientThread.start()
         }
         server.close()
     } catch (e: IOException) {
         println( "IO excepetion: \n${e.message}" )
     } catch (e: Exception) {
         println(e.message)
+    }
+}
+
+class ThreadHandler(name: String, var client: Socket) : Thread(name) {
+    override fun run () {
+        super.run()
+        println( "----connection accepted:$name----" )
+
+        val br = BufferedReader(InputStreamReader( client.getInputStream()))
+        val ps = PrintStream( client.getOutputStream())
+
+        var message = ""
+
+        println( "----reading input:$name----" )
+        message = br.readLine()
+
+        println("Request: $message")
+
+        var urn = ""
+        if (message.split(" ").size > 1) {
+            urn = message.split(" ")[1]
+            urn = urn.substring( 1 )
+        }
+
+        var isKeepAlive = false
+        var isChrome = false
+        while(!message.isEmpty()) {
+            message = br.readLine()
+
+            if (message.contains("keep-alive", true)) {
+                isKeepAlive = true
+            }
+            if (message.contains("chrome", true) || message.contains("Mozilla", true)) {
+                isChrome = true
+            }
+
+            if (message.startsWith("host", true)) {
+                host = message.split(" ")[1]
+            }
+        }
+
+        readConf(host)
+
+        response( ps, urn )
+
+        /*dont keep chrome alive*/
+        if (isKeepAlive && !isChrome ) {
+            println( client.keepAlive )
+            println( "----connection still alive:$name----" )
+//            keepAlive( this.client )
+            run()
+        }
+
+        println( "----connection closed:$name----\n" )
+        client.close()
     }
 }
 
