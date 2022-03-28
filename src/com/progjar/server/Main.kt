@@ -87,6 +87,7 @@ class ThreadHandler(name: String, var client: Socket) : Thread(name) {
             println( "----connection still alive:$name----" )
 //            keepAlive( this.client )
             run()
+            return
         }
 
         println( "----connection closed:$name----\n" )
@@ -123,55 +124,6 @@ fun readConf(domain: String) {
     }
 
     return
-}
-
-fun keepAlive( client: Socket ) {
-    var keepAlive = false
-
-    var br = BufferedReader(InputStreamReader(client.getInputStream()))
-    var ps = PrintStream(client.getOutputStream())
-    var message: String? = ""
-    try{
-        message = br.readLine()
-    } catch (e: IOException) {
-        message = ""
-        return
-    }
-
-    println("Request: $message")
-    if (message.isNullOrEmpty()) {
-        message = ""
-        return
-    }
-
-    var urn = message.split(" ")[1]
-    urn = urn.substring( 1 )
-
-    var isKeepAlive = false
-    var isChrome = false
-    while(!message!!.isEmpty()) {
-        message = br.readLine()
-
-        if (message.contains("keep-alive", true)) {
-            isKeepAlive = true
-        }
-        if (message.contains("chrome", true) || message.contains("Mozilla", true)) {
-            isChrome = true
-        }
-
-        if (message.startsWith("host", true)) {
-            host = message.split(" ")[1]
-        }
-    }
-
-    readConf(host)
-    response( ps, urn )
-
-    if (keepAlive && !isChrome ) {
-        println( client.keepAlive )
-        println( "----connection still alive----" )
-        keepAlive( client )
-    } else return
 }
 
 fun response( ps: PrintStream, urn: String ) {
