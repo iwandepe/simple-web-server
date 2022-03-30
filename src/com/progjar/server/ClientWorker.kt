@@ -2,12 +2,13 @@ package com.progjar.server
 
 import java.io.*
 import java.net.Socket
+import java.text.SimpleDateFormat
 import java.util.*
 
 
 class ClientWorker(name: String, var client: Socket) : Thread(name) {
-    //val ROOT = "C:\\developing\\project\\project-java\\simple-web-server\\res"
-    val ROOT = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res"
+    val ROOT = "C:\\developing\\project\\project-java\\simple-web-server\\res"
+//    val ROOT = "C:\\Users\\LENOVO\\IdeaProjects\\simple-web-server\\res"
     var serverroot = ""
     var port = 80
     var ip = ""
@@ -23,7 +24,13 @@ class ClientWorker(name: String, var client: Socket) : Thread(name) {
         println( "---- Reading Input: $name ----" )
 
         var message = br.readLine()
+
         var fullRequest = message + "\n"
+
+        if (message == null) {
+            return
+        }
+
         while (!message.isEmpty()) {
             message = br.readLine()
             fullRequest += message + "\n"
@@ -33,13 +40,19 @@ class ClientWorker(name: String, var client: Socket) : Thread(name) {
 
         println(request.getRequestStr())
 
-        readConf(request.getHost()!!)
+        if (request.isHostExist()) {
+            readConf(request.getHost()!!)
+        } else {
+            readConf("progjar.com")
+        }
 
         response( ps, request )
+        println( "---- Finish Responding $name ----" )
 
         if (
             request.isConnectionExist() &&
             request.getConnection()!! == "keep-alive" &&
+            request.isUserAgentExist() &&
             !request.getUserAgent()!!.contains("chrome", true)
         ) {
             println( client.keepAlive )
@@ -119,43 +132,85 @@ class ClientWorker(name: String, var client: Socket) : Thread(name) {
         ps.flush()
     }
 
+    fun createResponseHeader(request: Request, f: File): String {
+        val timeZone = TimeZone.getTimeZone("GMT")
+        val sdf = SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z").apply {
+            this.timeZone = timeZone
+        }
+
+        val timeInMillis = System.currentTimeMillis()
+        val calendar = Calendar.getInstance().apply {
+            this.timeInMillis = timeInMillis
+        }
+        "Date: ${sdf.format(calendar.time)}\r\n"
+
+
+        var responseHeader = ""
+        responseHeader += "HTTP/1.1 206 Partial Content\r\n"
+        // in case pake chrome
+        // responseHeader += "HTTP/1.1 200 OK\r\n"
+        responseHeader += "Date: ${sdf.format(calendar.time)}\r\n"
+        responseHeader += "Content-Disposition: attachment\r\n"
+        responseHeader += "Content-Type: application/${f.name.substring(f.name.lastIndexOf(".") + 1)}\r\n"
+        responseHeader += "Content-Length: ${f.length()}\r\n"
+        if (request.isRangeExist()) {
+            responseHeader += "Accept-Ranges: bytes\r\n"
+            responseHeader += "Content-Range: ${request.getRange()?.replace("=", " ")}/${f.length()}\r\n"
+        }
+        responseHeader += "Connection: close\r\n"
+        responseHeader += "Server: progjarx/v8.0\r\n"
+//        responseHeader += "\r\n"
+        return responseHeader
+    }
+
     fun responseBinaryFile(ps: PrintStream, f: File, request: Request) {
         val fis = FileInputStream(f)
 
+//        if (request.isRangeExist()) {
+        var byteStart: Long = 0
+        var byteEnd: Long = f.length() - 1
+
         if (request.isRangeExist()) {
-            val byteStart = request.getRangeStart()!!
-            val byteEnd = request.getRangeEnd()!!
-
-            val buffer = ByteArray(1024)
-            val contentLength = byteEnd - byteStart + 1
-
-            ps.println("HTTP/1.0 206 Partial Content")
-            ps.println("Content-Type: application/" + f.name.substring(f.name.lastIndexOf(".")))
-            ps.println("Content-Length: ${contentLength}")
-            ps.println("Content-Range: bytes ${byteStart}-${byteEnd}/${f.length()}")
-            ps.println()
-
-            var bytesRead = -1
-            var bytesTotal = 0
-            while (
-                fis.read(buffer, 0, 1024).also { bytesRead = it } != -1 &&
-                bytesTotal <= contentLength
-            ) {
-                ps.write(buffer, 0, bytesRead)
-                bytesTotal += bytesRead
-            }
+            byteStart = request.getRangeStart()!!
+            byteEnd = f.length() - 1
         }
-        else {
-            ps.println("HTTP/1.0 200 OK")
-            ps.println("Content-Type: application/" + f.name.substring(f.name.lastIndexOf(".")))
-            ps.println("Content-Length: " + f.length())
-            ps.println()
 
-            var buffer = ByteArray(1024)
-            while(fis.available() > 0) {
-                ps.write(buffer, 0, fis.read(buffer))
-            }
+        val buffer = ByteArray(1024)
+        val contentLength = byteEnd - byteStart
+
+//        ps.println("HTTP/1.0 206 Partial Content")
+//            ps.println("HTTP/1.0 200 OK")
+//        ps.println("Content-Type: application/" + f.name.substring(f.name.lastIndexOf(".")))
+//        ps.println("Content-Length: ${f.length()}")
+//        if (request.isRangeExist()) {
+//            ps.println("Content-Range: ${request.getRange()}/${f.length()}")
+//        }
+//        ps.println()
+
+        println( createResponseHeader(request, f) )
+        ps.println( createResponseHeader(request, f) )
+
+        var bytesRead = -1
+        var bytesTotal = 0
+        while (
+            fis.read(buffer, 0, 1024).also { bytesRead = it } != -1 &&
+            bytesTotal <= contentLength
+        ) {
+            ps.write(buffer, 0, bytesRead)
+            bytesTotal += bytesRead
         }
+//        }
+//        else {
+//            ps.println("HTTP/1.0 200 OK")
+//            ps.println("Content-Type: application/" + f.name.substring(f.name.lastIndexOf(".")))
+//            ps.println("Content-Length: " + f.length())
+//            ps.println()
+//
+//            var buffer = ByteArray(1024)
+//            while(fis.available() > 0) {
+//                ps.write(buffer, 0, fis.read(buffer))
+//            }
+//        }
 
         ps.flush()
     }

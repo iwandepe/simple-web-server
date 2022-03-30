@@ -2,8 +2,8 @@ listen 80
 
 domain progjar.com
 servername 127.0.0.1
-serverroot C:\Users\LENOVO\IdeaProjects\simple-web-server\res\progjar.com\
+serverroot C:\developing\project\project-java\simple-web-server\res\progjar.com\
 
 domain progjar.org
 servername 127.0.0.1
-serverroot C:\Users\LENOVO\IdeaProjects\simple-web-server\res\progjar.com\
+serverroot C:\developing\project\project-java\simple-web-server\res\progjar.org\
