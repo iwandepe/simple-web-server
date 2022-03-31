@@ -38,6 +38,7 @@ class ClientWorker(name: String, var client: Socket) : Thread(name) {
 
         val request = Request(fullRequest)
 
+        println( fullRequest )
         println(request.getRequestStr())
 
         if (request.isHostExist()) {
@@ -47,11 +48,10 @@ class ClientWorker(name: String, var client: Socket) : Thread(name) {
         }
 
         response( ps, request )
-        println( "---- Finish Responding $name ----" )
 
         if (
             request.isConnectionExist() &&
-            request.getConnection()!! == "keep-alive" &&
+            request.getConnection()!!.equals("keep-alive", true) &&
             request.isUserAgentExist() &&
             !request.getUserAgent()!!.contains("chrome", true)
         ) {
@@ -190,6 +190,7 @@ class ClientWorker(name: String, var client: Socket) : Thread(name) {
         println( createResponseHeader(request, f) )
         ps.println( createResponseHeader(request, f) )
 
+        println( "---- mau merespon ----")
         var bytesRead = -1
         var bytesTotal = 0
         while (
@@ -199,6 +200,7 @@ class ClientWorker(name: String, var client: Socket) : Thread(name) {
             ps.write(buffer, 0, bytesRead)
             bytesTotal += bytesRead
         }
+        println( "---- selesai merespon $name bytesRead: $bytesRead \t bytesTotal: $bytesTotal ----")
 //        }
 //        else {
 //            ps.println("HTTP/1.0 200 OK")
